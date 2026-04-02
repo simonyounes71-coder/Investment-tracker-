@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaulted — Investment Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0e13;
+    --surface: #13171f;
+    --card: #1a1f2b;
+    --border: #252b38;
+    --accent: #c8f04b;
+    --accent2: #4b9cf0;
+    --accent3: #f07b4b;
+    --text: #e8ecf4;
+    --muted: #6b7487;
+    --danger: #f04b4b;
+    --green: #4bf09a;
+    --radius: 14px;
+    --font-serif: 'DM Serif Display', Georgia, serif;
+    --font-sans: 'DM Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ─── AUTH ─────────────────────────────────── */
+  #auth-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #auth-screen::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(200,240,75,0.07) 0%, transparent 70%);
+    top: -200px; right: -200px;
+    pointer-events: none;
+  }
+
+  #auth-screen::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(75,156,240,0.06) 0%, transparent 70%);
+    bottom: -100px; left: -100px;
+    pointer-events: none;
+  }
+
+  .auth-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 420px;
+    max-width: 95vw;
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.5s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-logo {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .auth-tagline {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 36px;
+    font-weight: 300;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 28px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .auth-tab.active {
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 7px;
+  }
+
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .field input:focus {
+    border-color: var(--accent);
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #0b0e13;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+    letter-spacing: 0.2px;
+  }
+
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .auth-error {
+    background: rgba(240,75,75,0.12);
+    border: 1px solid rgba(240,75,75,0.3);
+    color: #f08080;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* ─── APP SHELL ─────────────────────────────── */
+  #app-screen { display: none; min-height: 100vh; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-logo {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--accent);
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .topbar-user {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .btn-logout:hover { border-color: var(--accent); color: var(--accent); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    overflow-x: auto;
+  }
+
+  .nav-tab {
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .nav-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  .page { display: none; padding: 32px 28px; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── DASHBOARD ─────────────────────────────── */
+  .page-title {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+
+  .page-sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: rgba(200,240,75,0.3); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-card.k1::before { background: var(--accent); }
+  .kpi-card.k2::before { background: var(--accent2); }
+  .kpi-card.k3::before { background: var(--accent3); }
+  .kpi-card.k4::before { background: var(--green); }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .kpi-delta {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--danger); }
+  .delta-neutral { color: var(--muted); }
+
+  /* ─── CHART ─────────────────────────────────── */
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: gap;
+    gap: 12px;
+  }
+
+  .chart-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+  }
+
+  .range-pills {
+    display: flex;
+    gap: 4px;
+  }
+
+  .range-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    transition: all 0.2s;
+  }
+
+  .range-pill.active, .range-pill:hover {
+    background: var(--accent);
+    color: #0b0e13;
+    border-color: var(--accent);
+  }
+
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* ─── ENTRY FORM ─────────────────────────────── */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 700px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .form-field label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+
+  .form-field input, .form-field select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+  .form-field select option { background: var(--card); }
+
+  .form-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin: 24px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    grid-column: 1 / -1;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    color: #0b0e13;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s;
+  }
+
+  .btn-save:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .save-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(75,240,154,0.12);
+    border: 1px solid rgba(75,240,154,0.3);
+    color: var(--green);
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    margin-top: 14px;
+    display: none;
+  }
+
+  /* ─── HISTORY TABLE ─────────────────────────── */
+  .history-table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  thead th {
+    background: var(--surface);
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+  tbody td {
+    padding: 13px 16px;
+    vertical-align: middle;
+  }
+
+  .td-date { color: var(--muted); font-size: 13px; }
+  .td-money { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .del-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .del-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(240,75,75,0.08); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state .emoji { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ─── TOAST ──────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 18px;
+    font-size: 14px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 320px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error { border-left: 3px solid var(--danger); }
+
+  /* ─── SETTINGS ───────────────────────────────── */
+  .settings-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 540px;
+    margin-bottom: 20px;
+  }
+
+  .settings-card h3 {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    margin-bottom: 18px;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .settings-row:last-child { border-bottom: none; }
+
+  .settings-row span { color: var(--muted); font-size: 13px; }
+
+  .hosting-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 700px;
+  }
+
+  .hosting-card h3 {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    margin-bottom: 18px;
+  }
+
+  .host-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .host-option:hover { border-color: var(--accent); }
+
+  .host-badge {
+    background: var(--accent);
+    color: #0b0e13;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  .host-badge.blue { background: var(--accent2); color: white; }
+
+  .host-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .host-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  .host-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--accent2);
+    text-decoration: none;
+  }
+
+  .host-link:hover { text-decoration: underline; }
+
+  /* ─── SCROLLBAR ──────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 20px 16px; }
+    .topbar { padding: 0 16px; }
+    .nav-tabs { padding: 0 16px; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .kpi-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH SCREEN ═══ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Vaulted</div>
+    <div class="auth-tagline">Your personal investment dashboard</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+
+    <div id="login-form">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" />
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Simon" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="reg-pass" placeholder="At least 6 characters" />
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app-screen">
+
+  <div class="topbar">
+    <div class="topbar-logo">Vaulted</div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="showPage('add-entry')">Add Entry</button>
+    <button class="nav-tab" onclick="showPage('history')">History</button>
+    <button class="nav-tab" onclick="showPage('hosting')">Hosting Guide</button>
+  </div>
+
+  <!-- ── DASHBOARD ── -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-title">Portfolio Overview</div>
+    <div class="page-sub" id="dash-date"></div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card k1">
+        <div class="kpi-label">Total Investments</div>
+        <div class="kpi-value" id="kpi-investments">$0</div>
+        <div class="kpi-delta" id="kpi-investments-delta">—</div>
+      </div>
+      <div class="kpi-card k2">
+        <div class="kpi-label">Total Assets</div>
+        <div class="kpi-value" id="kpi-assets">$0</div>
+        <div class="kpi-delta" id="kpi-assets-delta">—</div>
+      </div>
+      <div class="kpi-card k3">
+        <div class="kpi-label">Investments (no Super)</div>
+        <div class="kpi-value" id="kpi-nosuper">$0</div>
+        <div class="kpi-delta" id="kpi-nosuper-delta">—</div>
+      </div>
+      <div class="kpi-card k4">
+        <div class="kpi-label">Total Entries</div>
+        <div class="kpi-value" id="kpi-entries">0</div>
+        <div class="kpi-delta delta-neutral" id="kpi-span">—</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Investment Progression</div>
+        <div class="range-pills">
+          <button class="range-pill active" onclick="setRange(7, this)">7D</button>
+          <button class="range-pill" onclick="setRange(30, this)">1M</button>
+          <button class="range-pill" onclick="setRange(90, this)">3M</button>
+          <button class="range-pill" onclick="setRange(365, this)">1Y</button>
+          <button class="range-pill" onclick="setRange(99999, this)">All</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADD ENTRY ── -->
+  <div id="page-add-entry" class="page">
+    <div class="page-title">Daily Entry</div>
+    <div class="page-sub">Record your portfolio values for today</div>
+
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-field" style="grid-column: 1 / -1">
+          <label>Date</label>
+          <input type="date" id="entry-date" />
+        </div>
+
+        <div class="form-section-title">Investments (AUD)</div>
+
+        <div class="form-field">
+          <label>Betashares (AUD)</label>
+          <input type="number" id="f-betashares" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Stake US (AUD)</label>
+          <input type="number" id="f-stake" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Covered Calls (AUD)</label>
+          <input type="number" id="f-coveredcalls" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Savings (AUD)</label>
+          <input type="number" id="f-savings" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Cash (AUD)</label>
+          <input type="number" id="f-cash" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Super (AUD)</label>
+          <input type="number" id="f-super" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Bills (AUD)</label>
+          <input type="number" id="f-bills" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Swyftx Crypto (AUD)</label>
+          <input type="number" id="f-crypto" placeholder="0.00" step="0.01" />
+        </div>
+
+        <div class="form-section-title">Physical Assets</div>
+
+        <div class="form-field">
+          <label>Mercedes (AUD)</label>
+          <input type="number" id="f-mercedes" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Hyundai (AUD)</label>
+          <input type="number" id="f-hyundai" placeholder="0.00" step="0.01" />
+        </div>
+        <div class="form-field">
+          <label>Contents (AUD)</label>
+          <input type="number" id="f-contents" placeholder="0.00" step="0.01" />
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="saveEntry()">Save Entry</button>
+      <div class="save-success" id="save-msg">✓ Entry saved successfully</div>
+    </div>
+  </div>
+
+  <!-- ── HISTORY ── -->
+  <div id="page-history" class="page">
+    <div class="page-title">Entry History</div>
+    <div class="page-sub">All your recorded portfolio snapshots</div>
+
+    <div class="history-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Total Investments</th>
+            <th>Total Assets</th>
+            <th>Inv. (No Super)</th>
+            <th>vs Prior</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody"></tbody>
+      </table>
+      <div id="history-empty" class="empty-state" style="display:none">
+        <div class="emoji">📊</div>
+        <p>No entries yet. Start by adding your first daily entry.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOSTING GUIDE ── -->
+  <div id="page-hosting" class="page">
+    <div class="page-title">Free Hosting Options</div>
+    <div class="page-sub">Deploy Vaulted for free — pick the option that suits you</div>
+
+    <div class="hosting-card">
+      <h3>Recommended Free Hosts</h3>
+
+      <div class="host-option">
+        <div>
+          <div class="host-badge">⭐ Best</div>
+        </div>
+        <div>
+          <div class="host-name">Netlify</div>
+          <div class="host-desc">Drag-and-drop deploy. Just upload this HTML file to their dashboard. Free tier gives you custom domain, HTTPS, and instant deploy. No credit card required.</div>
+          <a href="https://app.netlify.com/drop" class="host-link" target="_blank">→ netlify.com/drop</a>
+        </div>
+      </div>
+
+      <div class="host-option">
+        <div>
+          <div class="host-badge blue">Simple</div>
+        </div>
+        <div>
+          <div class="host-name">GitHub Pages</div>
+          <div class="host-desc">Create a free GitHub repo, upload this file as <code style="color:var(--accent)">index.html</code>, enable Pages in Settings. Free forever at <code style="color:var(--accent)">yourname.github.io</code>.</div>
+          <a href="https://pages.github.com" class="host-link" target="_blank">→ pages.github.com</a>
+        </div>
+      </div>
+
+      <div class="host-option">
+        <div>
+          <div class="host-badge" style="background:var(--accent3);color:white">Fast</div>
+        </div>
+        <div>
+          <div class="host-name">Cloudflare Pages</div>
+          <div class="host-desc">Blazing fast CDN, free SSL, and unlimited bandwidth. Connect GitHub or drag-and-drop upload. Free tier is very generous.</div>
+          <a href="https://pages.cloudflare.com" class="host-link" target="_blank">→ pages.cloudflare.com</a>
+        </div>
+      </div>
+
+      <div class="host-option">
+        <div>
+          <div class="host-badge" style="background:var(--muted);color:white">Alt</div>
+        </div>
+        <div>
+          <div class="host-name">Vercel</div>
+          <div class="host-desc">Developer-friendly deploy. Free hobby plan includes custom domain and HTTPS. CLI or GitHub integration.</div>
+          <a href="https://vercel.com" class="host-link" target="_blank">→ vercel.com</a>
+        </div>
+      </div>
+
+      <div style="margin-top:20px; padding:16px; background:rgba(200,240,75,0.06); border:1px solid rgba(200,240,75,0.2); border-radius:10px; font-size:13px; color:var(--muted); line-height:1.7;">
+        <strong style="color:var(--text)">💡 How to deploy on Netlify in 60 seconds:</strong><br>
+        1. Go to <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--accent2)">app.netlify.com/drop</a><br>
+        2. Drag this <code style="color:var(--accent)">investment-tracker.html</code> file into the browser<br>
+        3. Rename it to <code style="color:var(--accent)">index.html</code> when prompted<br>
+        4. Your site is live instantly with a free URL!<br><br>
+        <strong style="color:var(--text)">🔐 Note on data:</strong> This app stores data in your browser's localStorage — your data stays on your device. For shared/cloud sync across devices, ask for a version connected to Supabase (free) or Firebase (free tier).
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ STATE ═══════════════════════════════════════════
+let currentUser = null;
+let chartInstance = null;
+let currentRange = 7;
+
+// ═══ STORAGE HELPERS ════════════════════════════════
+function storageKey(key) { return `vaulted_${currentUser}_${key}`; }
+function getEntries() { return JSON.parse(localStorage.getItem(storageKey('entries')) || '[]'); }
+function saveEntries(entries) { localStorage.setItem(storageKey('entries'), JSON.stringify(entries)); }
+function getUsers() { return JSON.parse(localStorage.getItem('vaulted_users') || '{}'); }
+function saveUsers(u) { localStorage.setItem('vaulted_users', JSON.stringify(u)); }
+
+// ═══ AUTH ════════════════════════════════════════════
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0) === (tab==='login')));
+  document.getElementById('login-form').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) return showAuthError('Please fill in all fields.');
+  const users = getUsers();
+  if (!users[email]) return showAuthError('No account found with that email.');
+  if (users[email].password !== btoa(pass)) return showAuthError('Incorrect password.');
+  loginSuccess(email, users[email].name);
+}
+
+function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-pass').value;
+  if (!name || !email || !pass) return showAuthError('Please fill in all fields.');
+  if (pass.length < 6) return showAuthError('Password must be at least 6 characters.');
+  if (!/\S+@\S+\.\S+/.test(email)) return showAuthError('Please enter a valid email.');
+  const users = getUsers();
+  if (users[email]) return showAuthError('An account with that email already exists.');
+  users[email] = { name, password: btoa(pass) };
+  saveUsers(users);
+  loginSuccess(email, name);
+}
+
+function loginSuccess(email, name) {
+  currentUser = email;
+  localStorage.setItem('vaulted_session', email);
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('topbar-user').textContent = name || email;
+  initApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('vaulted_session');
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+}
+
+// ═══ NAV ═════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'dashboard') refreshDashboard();
+  if (id === 'history') renderHistory();
+}
+
+// ═══ CALCS ═══════════════════════════════════════════
+function calcTotals(e) {
+  const investments = (e.betashares||0) + (e.stake||0) + (e.coveredcalls||0) + (e.savings||0) +
+                      (e.cash||0) + (e.super||0) + (e.bills||0) + (e.crypto||0);
+  const physicalAssets = (e.mercedes||0) + (e.hyundai||0) + (e.contents||0);
+  const totalAssets = investments + physicalAssets;
+  const totalNoSuper = investments - (e.super||0);
+  return { investments, physicalAssets, totalAssets, totalNoSuper };
+}
+
+// ═══ ENTRY ═══════════════════════════════════════════
+function saveEntry() {
+  const dateVal = document.getElementById('entry-date').value;
+  if (!dateVal) return showToast('Please select a date.', 'error');
+
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+
+  const entry = {
+    date: dateVal,
+    betashares: g('f-betashares'),
+    stake: g('f-stake'),
+    coveredcalls: g('f-coveredcalls'),
+    savings: g('f-savings'),
+    cash: g('f-cash'),
+    super: g('f-super'),
+    bills: g('f-bills'),
+    crypto: g('f-crypto'),
+    mercedes: g('f-mercedes'),
+    hyundai: g('f-hyundai'),
+    contents: g('f-contents'),
+  };
+
+  const entries = getEntries().filter(e => e.date !== dateVal);
+  entries.push(entry);
+  entries.sort((a,b) => a.date.localeCompare(b.date));
+  saveEntries(entries);
+
+  showToast('Entry saved ✓', 'success');
+  document.getElementById('save-msg').style.display = 'inline-flex';
+  setTimeout(() => document.getElementById('save-msg').style.display = 'none', 3000);
+}
+
+// ═══ DASHBOARD ═══════════════════════════════════════
+function refreshDashboard() {
+  const now = new Date();
+  document.getElementById('dash-date').textContent =
+    now.toLocaleDateString('en-AU', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  const entries = getEntries();
+  const n = entries.length;
+
+  if (n === 0) {
+    ['kpi-investments','kpi-assets','kpi-nosuper'].forEach(id => document.getElementById(id).textContent = '$0');
+    document.getElementById('kpi-entries').textContent = '0';
+    buildChart([]);
+    return;
+  }
+
+  const latest = calcTotals(entries[n-1]);
+  const prior = n > 1 ? calcTotals(entries[n-2]) : null;
+
+  document.getElementById('kpi-investments').textContent = fmt(latest.investments);
+  document.getElementById('kpi-assets').textContent = fmt(latest.totalAssets);
+  document.getElementById('kpi-nosuper').textContent = fmt(latest.totalNoSuper);
+  document.getElementById('kpi-entries').textContent = n;
+
+  setDelta('kpi-investments-delta', latest.investments, prior?.investments);
+  setDelta('kpi-assets-delta', latest.totalAssets, prior?.totalAssets);
+  setDelta('kpi-nosuper-delta', latest.totalNoSuper, prior?.totalNoSuper);
+
+  if (n > 1) {
+    const first = entries[0].date;
+    const last  = entries[n-1].date;
+    document.getElementById('kpi-span').textContent = `${first} → ${last}`;
+  }
+
+  buildChart(entries);
+}
+
+function setDelta(id, current, previous) {
+  const el = document.getElementById(id);
+  if (!previous) { el.textContent = '—'; el.className = 'kpi-delta delta-neutral'; return; }
+  const diff = current - previous;
+  const pct  = ((diff / previous) * 100).toFixed(2);
+  const sign = diff >= 0 ? '+' : '';
+  el.textContent = `${sign}${fmt(diff)} (${sign}${pct}%) vs prior`;
+  el.className = `kpi-delta ${diff >= 0 ? 'delta-up' : 'delta-down'}`;
+}
+
+// ═══ CHART ═══════════════════════════════════════════
+function setRange(days, btn) {
+  currentRange = days;
+  document.querySelectorAll('.range-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  buildChart(getEntries());
+}
+
+function buildChart(all) {
+  const entries = currentRange === 99999 ? all : all.slice(-currentRange);
+  const labels  = entries.map(e => fmtDate(e.date));
+  const inv     = entries.map(e => calcTotals(e).investments);
+  const assets  = entries.map(e => calcTotals(e).totalAssets);
+  const nosuper = entries.map(e => calcTotals(e).totalNoSuper);
+
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  const makeGradient = (ctx, color) => {
+    const g = ctx.createLinearGradient(0,0,0,280);
+    g.addColorStop(0, color+'33');
+    g.addColorStop(1, color+'00');
+    return g;
+  };
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total Investments',
+          data: inv,
+          borderColor: '#c8f04b',
+          backgroundColor: makeGradient(ctx, '#c8f04b'),
+          fill: true,
+          tension: 0.4,
+          pointRadius: entries.length < 40 ? 4 : 0,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          pointBackgroundColor: '#c8f04b',
+        },
+        {
+          label: 'Total Assets',
+          data: assets,
+          borderColor: '#4b9cf0',
+          backgroundColor: makeGradient(ctx, '#4b9cf0'),
+          fill: true,
+          tension: 0.4,
+          pointRadius: entries.length < 40 ? 4 : 0,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          pointBackgroundColor: '#4b9cf0',
+        },
+        {
+          label: 'Investments (no Super)',
+          data: nosuper,
+          borderColor: '#f07b4b',
+          backgroundColor: makeGradient(ctx, '#f07b4b'),
+          fill: true,
+          tension: 0.4,
+          pointRadius: entries.length < 40 ? 4 : 0,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          pointBackgroundColor: '#f07b4b',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#6b7487',
+            font: { family: 'DM Sans', size: 12 },
+            boxWidth: 12,
+            padding: 20,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1a1f2b',
+          borderColor: '#252b38',
+          borderWidth: 1,
+          titleColor: '#e8ecf4',
+          bodyColor: '#6b7487',
+          padding: 12,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#6b7487',
+            font: { family: 'DM Sans', size: 11 },
+            maxTicksLimit: 8,
+          }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#6b7487',
+            font: { family: 'DM Sans', size: 11 },
+            callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+          }
+        }
+      }
+    }
+  });
+}
+
+// ═══ HISTORY ═════════════════════════════════════════
+function renderHistory() {
+  const entries = getEntries().slice().reverse();
+  const tbody   = document.getElementById('history-tbody');
+  const empty   = document.getElementById('history-empty');
+  tbody.innerHTML = '';
+
+  if (entries.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  entries.forEach((e, i) => {
+    const t = calcTotals(e);
+    const prev = i < entries.length-1 ? calcTotals(entries[i+1]) : null;
+    const diff = prev ? t.investments - prev.investments : null;
+    const diffHtml = diff === null ? '<span style="color:var(--muted)">—</span>'
+      : `<span class="${diff>=0?'delta-up':'delta-down'}">${diff>=0?'+':''}${fmt(diff)}</span>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="td-date">${fmtDate(e.date)}</td>
+        <td class="td-money">${fmt(t.investments)}</td>
+        <td class="td-money">${fmt(t.totalAssets)}</td>
+        <td class="td-money">${fmt(t.totalNoSuper)}</td>
+        <td>${diffHtml}</td>
+        <td><button class="del-btn" onclick="deleteEntry('${e.date}')">✕</button></td>
+      </tr>`;
+  });
+}
+
+function deleteEntry(date) {
+  if (!confirm(`Delete entry for ${fmtDate(date)}?`)) return;
+  const updated = getEntries().filter(e => e.date !== date);
+  saveEntries(updated);
+  renderHistory();
+  showToast('Entry deleted', 'error');
+}
+
+// ═══ UTILS ═══════════════════════════════════════════
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('en-AU');
+}
+
+function fmtDate(d) {
+  const [y,m,day] = d.split('-');
+  return new Date(y,m-1,day).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success' ? '✓ ' : '✕ ') + msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══ INIT ════════════════════════════════════════════
+function initApp() {
+  // Set today's date in entry form
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('entry-date').value = today;
+
+  // Pre-fill last entry values if available
+  const entries = getEntries();
+  if (entries.length > 0) {
+    const last = entries[entries.length-1];
+    const fields = ['betashares','stake','coveredcalls','savings','cash','super','bills','crypto','mercedes','hyundai','contents'];
+    fields.forEach(f => {
+      const el = document.getElementById('f-'+f);
+      if (el && last[f]) el.value = last[f];
+    });
+  }
+
+  refreshDashboard();
+}
+
+// Auto-login from session
+window.addEventListener('load', () => {
+  const session = localStorage.getItem('vaulted_session');
+  if (session) {
+    const users = getUsers();
+    if (users[session]) loginSuccess(session, users[session].name);
+  }
+});
+</script>
+</body>
+</html>
